@@ -647,6 +647,15 @@ function decimalNumber(value) {
   return typeof value === 'string' && /^\s*0[xob]/i.test(value) ? NaN : Number(value);
 }
 
+// Issue #412: values copied out of code keep JavaScript's digit separators
+// ('1_000', '1_000.5'). For 'int' and 'number' a single '_' between two digits
+// is dropped before the numeric checks; any other '_' ('_100', '100_',
+// '1__000', '1_.5') leaves the value as-is, so it is rejected as before.
+function withoutDigitSeparators(value) {
+  if (typeof value !== 'string' || !value.includes('_')) return value;
+  return /(^|[^0-9])_|_([^0-9]|$)/.test(value) ? value : value.replace(/_/g, '');
+}
+
 // Semantic version: MAJOR.MINOR.PATCH, no leading zeroes in numeric parts;
 // optional pre-release/build suffixes and one optional lowercase 'v' prefix.
 // Shared by coerce() and toJsonSchema() so runtime and schema checks match.
@@ -692,7 +701,7 @@ function coerce(key, raw, type, trim = true, protocols, sensitive = false, of = 
       // Reject NaN as well as non-finite results (Infinity, -Infinity, and
       // exponent overflow like '1e999'): Number() parses them without error,
       // and a silent Infinity breaks downstream maths (issue #175).
-      const n = decimalNumber(v);
+      const n = decimalNumber(withoutDigitSeparators(v));
       if (v === '' || !Number.isFinite(n)) throw new Error(`${key}: expected a number (e.g. ${TYPE_EXAMPLES.number}), got "${shown}"`);
       return n;
     }
@@ -706,9 +715,11 @@ function coerce(key, raw, type, trim = true, protocols, sensitive = false, of = 
       // number passed directly, e.g. as a default) still just need to be an
       // integer; '3.5', 'abc', and non-finite values ('Infinity', '1e999')
       // do not pass. The shape is checked on the trimmed spelling so
-      // surrounding whitespace behaves the same with trim: false.
-      if (typeof v === 'string' && !/^[+-]?\d+$/.test(v.trim())) throw new Error(`${key}: expected an integer (e.g. ${TYPE_EXAMPLES.int}), got "${shown}"`);
-      const n = decimalNumber(v);
+      // surrounding whitespace behaves the same with trim: false. Digit
+      // separators ('1_000') are dropped first (issue #412).
+      const digits = withoutDigitSeparators(v);
+      if (typeof digits === 'string' && !/^[+-]?\d+$/.test(digits.trim())) throw new Error(`${key}: expected an integer (e.g. ${TYPE_EXAMPLES.int}), got "${shown}"`);
+      const n = decimalNumber(digits);
       if (v === '' || !Number.isFinite(n) || !Number.isInteger(n)) throw new Error(`${key}: expected an integer (e.g. ${TYPE_EXAMPLES.int}), got "${shown}"`);
       return n;
     }

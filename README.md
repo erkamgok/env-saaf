@@ -75,7 +75,7 @@ Environment inputs are strings. Output below is before an optional `transform`.
 | Type | Accepted input | JavaScript output | Additional rule options |
 | --- | --- | --- | --- |
 | `string` | Any non-missing text (default type) | `string` | `trim`, `minLength`, `maxLength`, `pattern` (`RegExp` or string) |
-| `number` | Non-empty decimal text, including fractions and exponent notation. Rejects radix prefixes (`0x`, `0b`, `0o`), `NaN` and non-finite values. | `number` | `trim`, `min`, `max` |
+| `number` | Non-empty decimal text, including fractions and exponent notation, with optional `_` digit separators (`1_000.5`). Rejects radix prefixes (`0x`, `0b`, `0o`), `NaN` and non-finite values. | `number` | `trim`, `min`, `max` |
 | `int` | Plain integer literal: optional sign + digits, e.g. `42`, `-3`, `007`. Decimal and scientific spellings (`1.0`, `1e3`) are rejected, as are radix prefixes | `number` | `trim`, `min`, `max` |
 | `boolean` | Case-insensitive `true/false`, `1/0`, `yes/no`, `on/off`, `y/n` | `boolean` | None |
 | `url` | Absolute URL accepted by `new URL()`, without normalization | `string` | `trim`, `minLength`, `maxLength`, `pattern`, `protocols` |
@@ -407,7 +407,7 @@ const env = validateEnv({
 });
 ```
 
-`int` is like `number` but only accepts plain integer literals — `42`, `-3` and `007` pass, while `3.5`, `1.0` and `1e3` fail (decimal and scientific spellings are not integer literals, even when the value happens to be whole). `port` follows the same rule. `min` and `max` work on `number`, `int` and `port`; either one can be used alone, and an out-of-range value is rejected with an error naming the allowed range.
+`int` is like `number` but only accepts plain integer literals — `42`, `-3`, `007` and `1_000` pass (a single `_` between digits is a separator, as in JavaScript), while `3.5`, `1.0` and `1e3` fail (decimal and scientific spellings are not integer literals, even when the value happens to be whole). `port` follows the same rule, without digit separators. `min` and `max` work on `number`, `int` and `port`; either one can be used alone, and an out-of-range value is rejected with an error naming the allowed range.
 
 ### `date` type and `min`/`max` — chronological bounds
 

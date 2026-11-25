@@ -3139,6 +3139,27 @@ assert.deepStrictEqual(
   }
 }
 
+// Issue #412: a single '_' between digits (as in JavaScript numeric literals)
+// is accepted for 'int' and 'number'; misplaced separators are still rejected
+// with the usual messages.
+{
+  assert.strictEqual(validateEnv({ N: { type: 'int' } }, { N: '1_000' }).N, 1000);
+  assert.strictEqual(validateEnv({ N: { type: 'int' } }, { N: '-1_000_000' }).N, -1000000);
+  assert.strictEqual(validateEnv({ N: { type: 'number' } }, { N: '1_000.5' }).N, 1000.5);
+  assert.strictEqual(validateEnv({ N: { type: 'number' } }, { N: '0.000_1' }).N, 0.0001);
+  assert.strictEqual(validateEnv({ N: { type: 'int', min: 1, max: 5000 } }, { N: '2_500' }).N, 2500);
+  assert.deepStrictEqual(validateEnv({ N: { type: 'array', of: 'int' } }, { N: '1_000,2_000' }).N, [1000, 2000]);
+  for (const raw of ['_100', '100_', '1__000', '1_.5']) {
+    assert.throws(() => validateEnv({ N: { type: 'int' } }, { N: raw }),
+      (err) => err.errors[0] === `N: expected an integer (e.g. 42), got "${raw}"`);
+    assert.throws(() => validateEnv({ N: { type: 'number' } }, { N: raw }),
+      (err) => err.errors[0] === `N: expected a number (e.g. 3.14), got "${raw}"`);
+  }
+  // Separators do not turn a decimal into an integer or bypass the radix rule.
+  assert.throws(() => validateEnv({ N: { type: 'int' } }, { N: '1_000.5' }), /expected an integer/);
+  assert.throws(() => validateEnv({ N: { type: 'number' } }, { N: '0x1_0' }), /expected a number/);
+}
+
 // Issue #58: every built-in type's validation error includes a format example,
 // and aggregated errors remain one concise bullet per key.
 {

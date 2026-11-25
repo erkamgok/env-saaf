@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed: `int` and `number` accept digit separators as in JavaScript numeric literals (`1_000` is 1000, `1_000.5` is 1000.5): a single `_` between two digits is dropped before the numeric check, and `_100`, `100_`, `1__000` and `1_.5` are still rejected with the same messages (fixes #412).
 - Fixed: `host` accepts and preserves a single trailing DNS root dot on a hostname, while still rejecting leading dots and empty labels (fixes #413).
 
 - Added: `options.rules` on `validateEnv`, `loadEnv`, and `loadEnvAsync` for
